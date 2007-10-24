@@ -3,7 +3,7 @@
 
 struct ck_hash_st {
   uint32_t flags;
-  ck_hash_opt *opt;
+  ck_opt   *cfg;
 
   /* entry tables */
   ck_entry *bins;

@@ -3,7 +3,7 @@ CFLAGS=-W -Wall -pedantic -g  -I../include
 LDFLAGS=
 LIBS=
 LIB=libcuckoo.so
-OBJS=hash_opt.o hash.o
+OBJS=cfg.o hash.o
 
 all: $(LIB)
 

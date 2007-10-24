@@ -13,9 +13,9 @@ extern "C" {
 #include <cuckoo/ck_types.h>
 #include <cuckoo/ck_error.h>
 #include <cuckoo/ck_algos.h>
-#include <cuckoo/ck_entry.h>
-#include <cuckoo/ck_hash_opt.h>
 #include <cuckoo/ck_stats.h>
+#include <cuckoo/ck_entry.h>
+#include <cuckoo/ck_cfg.h>
 #include <cuckoo/ck_hash.h>
 
 #ifdef __cplusplus

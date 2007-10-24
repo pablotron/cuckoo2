@@ -1,23 +1,23 @@
 #include "ck_private.h"
 
 static ck_err 
-ck_init_with_size(ck_hash *hash, ck_hash_opt *opt, size_t size) {
+ck_init_with_size(ck_hash *hash, ck_cfg *cfg, size_t size) {
   uint32_t mod;
 
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
 
-  /* set default options */
-  if (!opt)
-    opt = ck_get_default_opt();
+  /* set default cfgions */
+  if (!cfg)
+    cfg = ck_get_default_cfg();
 
   /* clear and populate hash */
   memset(hash, 0, sizeof(ck_hash));
-  hash->opt = opt;
+  hash->cfg = cfg;
 
   /* calculate size and make sure it's a multiple of 3 */
-  size = (size > 0) ? size : opt->default_capa;
+  size = (size > 0) ? size : cfg->default_capa;
   if ((mod = (size % 3)) != 0) 
     size += 3 - mod;
 
@@ -25,7 +25,7 @@ ck_init_with_size(ck_hash *hash, ck_hash_opt *opt, size_t size) {
   size = size * sizeof(ck_entry);
 
   /* allocate bins */
-  if ((hash->bins = (*(opt->malloc))(hash, size)) == NULL)
+  if ((hash->bins = (*(cfg->malloc))(hash, size)) == NULL)
     return CK_ERR_NOMEM;
 
   /* populate bin capacities */
@@ -37,8 +37,8 @@ ck_init_with_size(ck_hash *hash, ck_hash_opt *opt, size_t size) {
 }
 
 ck_err 
-ck_init(ck_hash *hash, ck_hash_opt *opt) {
-  return ck_init_with_size(hash, opt, 0);
+ck_init(ck_hash *hash, ck_cfg *cfg) {
+  return ck_init_with_size(hash, cfg, 0);
 }
 
 ck_err 
@@ -46,7 +46,7 @@ ck_fini(ck_hash *hash) {
   /* FIXME: add null check */
 
   /* free bins */
-  (*(hash->opt->free))(hash, hash->bins);
+  (*(hash->cfg->free))(hash, hash->bins);
 
   /* clear out internal elements */
   memset(hash, 0, sizeof(ck_hash));
@@ -63,7 +63,7 @@ ck_key(ck_hash *hash, void *key, uint32_t key_len, uint32_t *ret) {
     return CK_ERR_NULL_HASH;
 
   /* hash value */
-  return hash->opt->hash(hash, key, key_len, ret);
+  return hash->cfg->hash(hash, key, key_len, ret);
 }
 
 static ck_err
@@ -143,11 +143,11 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
   ne.keys[1] = ne.keys[1];
 
   /* set the number of resizes */
-  num_resizes = hash->opt->max_resizes;
+  num_resizes = hash->cfg->max_resizes;
 
   do {
     /* set/reset number of tries (insert attempts) */
-    num_tries = hash->opt->max_tries;
+    num_tries = hash->cfg->max_tries;
 
     do {
       /* check each bin */
@@ -172,7 +172,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
     } while (num_tries-- > 0);
 
     /* if we've made it this far then we have an entry in @ne 
-     * that has collided more than hash->opt->max_tries times, 
+     * that has collided more than hash->cfg->max_tries times, 
      * so we need to resize the bins and try again */
     /* decriment the number of resizes */
     num_resizes--;
@@ -185,7 +185,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       hash->stats[CK_STAT_NUM_COL_RESIZES]++;
 
       /* resize bins */
-      if ((err = (*(hash->opt->resize))(hash)) != CK_OK) {
+      if ((err = (*(hash->cfg->resize))(hash)) != CK_OK) {
         /* couldn't resize the bins; save the failed entry and return
          * the error */
 

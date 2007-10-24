@@ -1,5 +1,5 @@
-#ifndef CK_HASH_OPT_H
-#define CK_HASH_OPT_H
+#ifndef CK_CFG_H
+#define CK_CFG_H
 
 typedef struct {
   uint32_t flags;
@@ -17,8 +17,8 @@ typedef struct {
   size_t default_capa,
          max_tries,
          max_resizes;
-} ck_hash_opt;
+} ck_cfg;
 
-ck_hash_opt *ck_get_default_opt(void);
+ck_cfg *ck_get_default_cfg(void);
 
-#endif /* CK_HASH_OPT_H */
+#endif /* CK_CFG_H */
