@@ -9,7 +9,9 @@ extern "C" {
 #include <stdint.h>
 #include <unistd.h>
 
+#include <cuckoo/types.h>
 #include <cuckoo/error.h>
+#include <cuckoo/hash_opt.h>
 #include <cuckoo/hash.h>
 
 #ifdef __cplusplus
