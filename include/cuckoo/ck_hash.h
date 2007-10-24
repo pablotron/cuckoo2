@@ -7,7 +7,7 @@ struct ck_hash_st {
 
   /* entry tables */
   ck_entry *bins;
-  size_t    used[2], 
+  size_t    used, 
             capa[2];
 
   ck_entry  failed_entry;
@@ -16,7 +16,7 @@ struct ck_hash_st {
 };
 
 #define CK_HASH(h) ((ck_hash*) (h))
-#define CK_USED(h) ((h)->used[0] + (h)->used[1])
+#define CK_USED(h) ((h)->used)
 #define CK_CAPA(h) ((h)->capa[0] + (h)->capa[1])
 #define CK_HAS(h, k, kl, kz) (ck_get((h), (k), (kl), (kz), NULL) != CK_NONE)
 

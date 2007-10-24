@@ -57,7 +57,6 @@ void test_01_setget(int argc, char *argv[]) {
   }
 
   /* get all results back */
-
   for (i = 0; pairs[i].key; i++) {
     /* get key, key length, and value */
     key = pairs[i].key;

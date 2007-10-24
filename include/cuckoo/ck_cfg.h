@@ -12,7 +12,7 @@ typedef struct {
   ck_err (*hash)(ck_hash *, void *, size_t, uint32_t *);
 
   /* resize callback */
-  ck_err (*resize)(ck_hash *);
+  ck_err (*resize)(ck_hash *, size_t *);
 
   size_t default_capa,
          max_tries,

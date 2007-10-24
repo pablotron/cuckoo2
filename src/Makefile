@@ -1,5 +1,5 @@
 CC=cc
-CFLAGS=-W -Wall -pedantic -g  -I../include
+CFLAGS=-W -Wall -g -I../include -DCK_DEBUG
 LDFLAGS=
 LIBS=
 LIB=libcuckoo.so

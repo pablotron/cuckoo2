@@ -129,6 +129,8 @@ ck_hash_cb_hseish_jenkins3(ck_hash *hash, void *key, size_t key_len, uint32_t *r
   ret[0] = ck_hash_superfast(key, key_len);
   ret[1] = ck_hash_jenkins_lookup3(key, key_len);
 
+  DEBUG("%s => [%ld, %ld]", (char*) key, (unsigned long) ret[0], (unsigned long) ret[1]);
+
   return CK_OK;
 }
 

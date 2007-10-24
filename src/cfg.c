@@ -19,68 +19,17 @@ free_wrapper(ck_hash *hash, void *ptr) {
 }
 
 static ck_err
-do_resize(ck_hash *hash) {
-  ck_entry *new_bins;
-  size_t i, ofs, old_used, old_capa, new_capa[2], new_size;
-  
+do_resize_calc(ck_hash *hash, size_t *new_capa) {
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
-
-  /* calculate total old size */
-  old_capa = hash->capa[0] + hash->capa[1];
+  if (!new_capa)
+    return CK_ERR_NULL_BUF;
 
   /* default behavior is to double the size */
   new_capa[0] = 2 * hash->capa[0];
   new_capa[1] = 2 * hash->capa[1];
-  new_size = 2 * old_capa * sizeof(ck_entry);
-   
-  /* allocate and clear new bins */
-  if ((new_bins = hash->cfg->malloc(hash, new_size)) == NULL)
-    return CK_ERR_NOMEM;
-  memset(new_bins, 0, new_size);
-  
-  /* add old values to new bins */
-  for (i = 0; old_used > 0 && i < old_capa; i++) {
-    if (!hash->bins[i].key)
-      continue;
-
-    /* calculate offset for entry in first bin */
-    ofs = hash->bins[i].keys[0] % new_capa[0];
-
-    if (!new_bins[ofs].key) {
-      /* save entry */
-      new_bins[ofs] = hash->bins[i];
-      old_used--;
-
-      continue;
-    }
-
-    /* calculate offset for entry in first bin */
-    ofs = new_capa[0] + (hash->bins[i].keys[1] % new_capa[1]);
-
-    if (!new_bins[ofs].key) {
-      /* save entry */
-      new_bins[ofs] = hash->bins[i];
-      old_used--;
-
-      continue;
-    }
-
-    /* if we got here then we already have a collision, abort with an
-     * error */
-    /* FIXME: there should be a more graceful way of handling this */
-    (*(hash->cfg->free))(hash, new_bins);
-    return CK_ERR_RESIZE_COLLISION;
-  }
-
-  /* if we got here then we've succcessfully repopulated the new bins,
-   * so save the new capacity and free the old bins */
-  hash->capa[0] = new_capa[0];
-  hash->capa[1] = new_capa[1];
-  
-  (*(hash->cfg->free))(hash, hash->bins);
-  hash->bins = new_bins;
+  DEBUG("old_capa = [%d, %d], new_capa = [%d, %d]", hash->capa[0], hash->capa[1], new_capa[0], new_capa[1]);
 
   /* return success */
   return CK_OK;
@@ -99,10 +48,10 @@ default_config = {
 
   /* hashing functions */
   ck_hash_cb_hseish_jenkins3,
-  do_resize,
+  do_resize_calc,
 
   /* tunables */
-  24,   /* default capa */
+  48,   /* default capa */
   5,    /* max_tries */
   5     /* max_resizes */
 };
