@@ -4,3 +4,5 @@ syntax: glob
 *.so
 .*sw?
 cuckoo_test
+inc
+libcuckoo.so
