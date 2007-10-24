@@ -23,7 +23,6 @@ do_resize(ck_hash *hash) {
   ck_entry *new_bins;
   size_t i, ofs, old_used, old_capa, new_capa[2], new_size;
   
-  
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
@@ -99,7 +98,7 @@ default_config = {
   free_wrapper,
 
   /* hashing functions */
-  ck_hash_hseish_sfh,
+  ck_hash_cb_hseish_jenkins3,
   do_resize,
 
   /* tunables */

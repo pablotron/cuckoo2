@@ -3,7 +3,7 @@
 
 struct ck_hash_st {
   uint32_t flags;
-  ck_opt   *cfg;
+  ck_cfg   *cfg;
 
   /* entry tables */
   ck_entry *bins;
@@ -20,7 +20,7 @@ struct ck_hash_st {
 #define CK_CAPA(h) ((h)->capa[0] + (h)->capa[1])
 #define CK_HAS(h, k, kl, kz) (ck_get((h), (k), (kl), (kz), NULL) != CK_NONE)
 
-ck_err ck_init(ck_hash *hash, ck_hash_opt *);
+ck_err ck_init(ck_hash *hash, ck_cfg *);
 ck_err ck_fini(ck_hash *hash);
 
 ck_err ck_key(ck_hash *hash, void *key, uint32_t key_len, uint32_t *ret);
