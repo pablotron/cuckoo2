@@ -29,4 +29,6 @@ ck_err ck_get(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *
 ck_err ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val);
 ck_err ck_rm(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret);
 
+ck_err ck_dump(ck_hash *hash, FILE *io);
+
 #endif /* CK_HASH_H */

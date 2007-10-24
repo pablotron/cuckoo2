@@ -9,6 +9,7 @@ extern "C" {
 #include <stdint.h> /* for uint32_t */
 #include <stdlib.h> /* for malloc/realloc/free */
 #include <string.h> /* for memset() */
+#include <stdio.h> /* for FILE* */
 
 #include <cuckoo/ck_types.h>
 #include <cuckoo/ck_error.h>

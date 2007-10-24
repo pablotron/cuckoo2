@@ -63,7 +63,7 @@ ck_key(ck_hash *hash, void *key, uint32_t key_len, uint32_t *ret) {
     return CK_ERR_NULL_HASH;
 
   /* hash value */
-  return hash->cfg->hash(hash, key, key_len, ret);
+  return (*(hash->cfg->hash))(hash, key, key_len, ret);
 }
 
 static ck_err
@@ -105,7 +105,7 @@ ck_get(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
   ck_entry *e;
 
   /* null checks */
-  if (!key || !key_len || !keys)
+  if (!key || !key_len)
     return CK_ERR_NULL_BUF;
   if (!hash)
     return CK_ERR_NULL_HASH;
@@ -162,7 +162,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
 
         /* if the old entry was empty or the keys for the old and new
          * entry were identical, then return success */
-        if (!ne.key || (e->keys[0] == ne.keys[0] && e->keys[1] == ne.keys[1]))
+        if (!ne.key || (e->key == ne.key && e->key_len == ne.key_len) || (e->keys[0] == ne.keys[0] && e->keys[1] == ne.keys[1]))
           return CK_OK;
 
         /* increment the collision counters */
@@ -230,6 +230,22 @@ ck_rm(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
   /* clear entry */
   e->key = NULL;
   
+  /* return success */
+  return CK_OK;
+}
+
+ck_err
+ck_dump(ck_hash *hash, FILE *io) {
+  size_t i, capa;
+  if (!hash)
+    return CK_ERR_NULL_HASH;
+
+  /* print all entries to io stream */
+  capa = hash->capa[0] + hash->capa[1];
+  for (i = 0; i < capa; i++)
+    if (hash->bins[i].key)
+      fprintf(io, "%03d:%s:%s\n", i, (char*) hash->bins[i].key, (char*) hash->bins[i].val);
+
   /* return success */
   return CK_OK;
 }
