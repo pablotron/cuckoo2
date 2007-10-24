@@ -173,7 +173,7 @@ do_resize(ck_hash *hash, size_t *new_capa) {
       continue;
     }
 
-    /* calculate offset for entry in first bin */
+    /* calculate offset for entry in second bin */
     ofs = new_capa[0] + (hash->bins[i].keys[1] % new_capa[1]);
 
     if (!new_bins[ofs].key) {
@@ -272,7 +272,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       /* check each bin */
       for (i = 0; i < 2; i++) {
         /* get matching entry from bin */
-        e = hash->bins + (ne.keys[i] % hash->capa[i]);
+        e = hash->bins + (i ? hash->capa[0] : 0) + (ne.keys[i] % hash->capa[i]);
           DEBUG("e = %p, bins = %p", (void*) e, (void*) hash->bins);
 
         /* save old entry and write new entry */

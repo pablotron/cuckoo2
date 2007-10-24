@@ -10,6 +10,9 @@ all: $(APP) tests
 tests: $(APP)
 	LD_LIBRARY_PATH="../src" ./$(APP)
 
+debug: $(APP)
+	LD_LIBRARY_PATH="../src" gdb ./$(APP)
+
 $(APP): $(OBJS)
 	$(CC) -o $(APP) $(OBJS) $(LDFLAGS)
 
