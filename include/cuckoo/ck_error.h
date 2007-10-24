@@ -4,6 +4,11 @@
 typedef enum {
   CK_OK,
   CK_NONE,
+  CK_ERR_NOMEM,
+  CK_ERR_NULL_HASH,
+  CK_ERR_NULL_BUF,
+  CK_ERR_TOO_MANY_RESIZES,
+  CK_ERR_RESIZE_COLLISION,
   CK_ERR_LAST
 } ck_err;
 

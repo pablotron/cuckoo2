@@ -1,33 +1,18 @@
 #ifndef CK_HASH_H
 #define CK_HASH_H
 
-#include <stdint.h>
-#include <unistd.h>
-
-typedef struct {
-  uint32_t flags;
-
-  /* hash callback */
-  ck_err (*hash)(void *, size_t, uint32_t *, void *);
-
-  ck_err (*malloc)(ck_hash *, size_t);
-  ck_err (*realloc)(ck_hash *, size_t);
-  ck_err (*free)(ck_hash *, void *);
-
-  size_t growth_factor,
-         default_capa;
-} ck_hash_opt;
-
 struct ck_hash_st {
   uint32_t flags;
   ck_hash_opt *opt;
 
   /* entry tables */
-  ck_entry *bins[2];
+  ck_entry *bins;
   size_t    used[2], 
             capa[2];
 
-  uint32_t  stats;
+  ck_entry  failed_entry;
+
+  uint32_t  stats[CK_STAT_LAST];
 };
 
 #define CK_HASH(h) ((ck_hash*) (h))

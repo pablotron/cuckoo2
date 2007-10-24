@@ -1,5 +1,6 @@
 syntax: glob
 
 *.o
+*.so
 .*sw?
 cuckoo_test

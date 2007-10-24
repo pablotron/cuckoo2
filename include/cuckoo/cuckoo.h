@@ -6,13 +6,17 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include <stdint.h>
-#include <unistd.h>
+#include <stdint.h> /* for uint32_t */
+#include <stdlib.h> /* for malloc/realloc/free */
+#include <string.h> /* for memset() */
 
-#include <cuckoo/types.h>
-#include <cuckoo/error.h>
-#include <cuckoo/hash_opt.h>
-#include <cuckoo/hash.h>
+#include <cuckoo/ck_types.h>
+#include <cuckoo/ck_error.h>
+#include <cuckoo/ck_algos.h>
+#include <cuckoo/ck_entry.h>
+#include <cuckoo/ck_hash_opt.h>
+#include <cuckoo/ck_stats.h>
+#include <cuckoo/ck_hash.h>
 
 #ifdef __cplusplus
 };
