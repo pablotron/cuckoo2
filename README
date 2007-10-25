@@ -1,0 +1,269 @@
+LibCuckoo 0.1.0 README
+======================
+
+libcuckoo is a fast, simple, and memory-efficient hash table
+library.  libcuckoo is extremely fast; here's how the insert and lookup
+times stack up on my machine against the hash table implementations in
+glibc and glib 2.0:
+
+    Results (7572007 words):
+    insert (cuckoo):     1.765sec (0.23314usec/word)
+    lookup (cuckoo):     1.645sec (0.21722usec/word)
+    insert (glib):       2.037sec (0.26896usec/word)
+    lookup (glib):       1.922sec (0.25389usec/word)
+    insert (glibc):      2.037sec (0.25268usec/word)
+    lookup (glibc):      1.922sec (0.23852usec/word)
+
+On my machine, 
+For lookup-heavy problems, you can pre-hash keys for even better
+performance:
+
+(By the way, you can run these tests on your machine by typing "make
+all" in the tests/benchmark directory).
+
+Interesting links:
+
+Paul Hsieh's Super Fast Hash:
+  http://www.azillionmonkeys.com/qed/hash.html
+Bob Jenkin's Lookup 3
+  http://burtleburtle.net/bob/hash/doobs.html
+See Also:
+  http://www.ipd.bth.se/ska/sim_home/hash_performance.html
+
+Usage
+=====
+To create a new hash table:
+
+    ck_hash hash;
+    ck_err err;
+
+    /* create a new hash table */
+    err = ck_init(&hash, NULL);
+
+And here's how to insert a value into the table:
+
+    char  *key = "sample key",
+          *val = "sample val";
+    size_t len = strlen(key) + 1;
+
+    err = ck_set(&hash, key, len, NULL, val);  
+
+And here's how to get a value:
+
+    char  *key = "sample key",
+          *val, err_buf[1024];
+    size_t len = strlen(key) + 1;
+
+    /* get value from table */
+    err = ck_get(&hash, key, len, NULL, &val);
+
+    /* check result */
+    if (err == CK_OK) {
+      /* found value */
+      printf("got %s\n", val);
+    } else if (err == CK_NONE) {
+      /* couldn't find key */
+      printf("couldn't find %s\n", key);
+    } else {
+      /* print out error */
+      ck_strerror(err, err_buf, sizeof(err_buf));
+      printf("error: %s\n", err_buf);
+    }
+
+Here's how to remove an entry:
+
+    char  *key = "sample key",
+    size_t len = strlen(key) + 1;
+
+    /* remove entry from table */
+    err = ck_rm(&hash, key, len, NULL, NULL);
+
+Finally, here's an example of inserting several key/value pairs at the
+same time, complete with error checking.  This example also demonstrates
+how to use iterators:
+
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <string.h>
+    #include <cuckoo/cuckoo.h>
+
+    /* c99-style assertion convenience macro */
+    #define assert_ok(err, msg) do {                                    \
+      char err_buf[1024];                                               \
+      if ((err) != CK_OK) {                                             \
+        ck_strerror((err), err_buf, sizeof(err_buf));                   \
+        fprintf(stderr, "ERROR: couldn't %s: %s\n", (msg), err_buf);    \
+        exit(EXIT_FAILURE);                                             \
+      }                                                                 \
+    } while (0)
+
+    int main(int argc, char *argv[]) {
+      ck_hash hash;
+      ck_iter iter;
+      ck_entry entry;
+      ck_err err;
+
+      char *key, *val, buf[1024];
+      size_t i, len;
+
+      /* some values for the hash table */
+      struct { char *key, *val; } args[] = {
+        { "dude",     "where's" },
+        { "my",       "car?" },
+        { "where's",  "your" },
+        { "car",      "dude?" },
+        { NULL,       NULL } 
+      };
+
+      /* create a new hash table */
+      err = ck_init(&hash, NULL);
+      assert_ok(err, "create hash table");
+      
+      /* insert values into the hash table */
+      for (i = 0; args[i].key; i++) {
+        /* get key, key length, and value */
+        key = args[i].key;
+        len = strlen(args[i].key) + 1;
+        val = args[i].val;
+
+        /* insert into table */
+        err = ck_set(&hash, key, len, NULL, val);
+        assert_ok(err, "insert key");
+      }
+
+      /*
+       * now that we've got all the values inserted into the table,
+       * let's use an iterator to print them back out.
+       */
+
+      /* create new iterator */
+      err = ck_iter_init(&iter, &hash);
+      assert_ok(err, "create iterator");
+
+      /* iterate over table entries */
+      while ((err = ck_iter_next(&iter, &entry)) != CK_OK) {
+        /* grab key and value from entry */
+        key = (char*) entry->key;
+        val = (char*) entry->val;
+
+        /* print out key and value */
+        printf("key = %s, val = %s\n", key, val);
+      }
+
+      /* check for error */
+      if (err != CK_NONE) {
+        ck_strerror(err, buf, sizeof(buf));
+        fprintf(stderr, "couldn't iterate over table: %s\n", buf);
+        return EXIT_FAILURE;
+      }
+
+      /* clean up hash table */
+      ck_fini(&hash);
+
+      /* return success */
+      return EXIT_SUCCESS;
+    }
+
+That's all you need to know to get started.  The next section covers
+slightly more advanced topics like memory allocation and hashing
+algorithms.
+
+
+Advanced Usage
+==============
+This section explains how to customize the memory allocation, hashing
+algorithms, and resize behavior of libcuckoo.  Let's start with the
+memory allocation:
+
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <string.h>
+    #include <cuckoo/cuckoo.h>
+
+    /* c99-style convenience macro */
+    #define assert_ok(err, msg) do {                                    \
+      char err_buf[1024];                                               \
+      if ((err) != CK_OK) {                                             \
+        ck_strerror((err), err_buf, sizeof(err_buf));                   \
+        fprintf(stderr, "ERROR: couldn't %s: %s\n", (msg), err_buf);    \
+        exit(EXIT_FAILURE);                                             \
+      }                                                                 \
+    } while (0)
+
+    /* keep track of memory use */
+    static size_t bytes_allocated = 0;
+
+    static void *
+    my_fancy_malloc(ck_hash *hash, size_t num_bytes) {
+      void *ret;
+
+      /* allocate memory */
+      if ((ret = malloc(num_bytes + sizeof(size_t))) == NULL) {
+        perror("couldn't allocate memory: ");
+        exit(EXIT_FAILURE);
+      }
+
+      /* save chunk size */
+      memcpy(ptr, &num_bytes, sizeof(size_t);
+
+      /* increment counter */
+      bytes_allocated += num_bytes;
+
+      /* return result */
+      return ret;
+    }
+
+    static void
+    my_fancy_free(ck_hash *hash, void *ptr) {
+      size_t num_bytes;
+      ptr -= sizeof(size_t);
+
+      /* get chunk size */
+      memcpy(&num_bytes, ptr, sizeof(size_t));
+
+      /* decriment counter */
+      bytes_allocated -= num_bytes;
+
+      /* free memory */
+      free(ptr);
+    }
+
+    int main(int argc, char *argv[]) {
+      ck_hash hash;
+      ck_cfg cfg;
+      ck_err err;
+      char buf[1024];
+
+      /* set table config to reasonable defaults */
+      err = ck_cfg_init(&cfg);
+      assert_ok(err, "init table config"); 
+
+      /* override malloc and free */
+      cfg.malloc = my_fancy_malloc;
+      cfg.free = my_fancy_free;
+    
+      /* create a hash table using my custom config */
+      err = ck_init(&hash, &cfg);
+      assert_ok(err, "create hash table"); 
+
+      /*
+       * ... do stuff here ...
+       */
+
+      /* free hash table */
+      err = ck_fini(&hash);
+      assert_ok(err, "free hash table");
+
+      /* return success */
+      return EXIT_SUCCESS;
+    }
+
+Note that you can use your config to create as many hash tables as you'd
+like.
+
+About the Author
+================
+Paul Duncan <pabs@pablotron.org>
+http://pablotron.org/

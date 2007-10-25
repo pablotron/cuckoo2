@@ -19,6 +19,7 @@ typedef struct {
          max_resizes;
 } ck_cfg;
 
+ck_err ck_cfg_init(ck_cfg *);
 ck_cfg *ck_get_default_cfg(void);
 
 #endif /* CK_CFG_H */

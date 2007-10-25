@@ -60,6 +60,21 @@ default_config = {
   5     /* max_resizes */
 };
 
+ck_err
+ck_cfg_init(ck_cfg *ret) {
+#ifdef CK_SAFETY_CHECKS
+  /* check for return buffer */
+  if (!cfg)
+    return CK_ERR_NULL_BUF;
+#endif /* CK_SAFETY_CHECKS */
+
+  /* copy defaults */
+  memcpy(ret, &default_config, sizeof(ck_cfg));
+
+  /* return success */
+  return CK_OK;
+}
+
 ck_cfg *
 ck_get_default_cfg(void) {
   return &default_config; 
