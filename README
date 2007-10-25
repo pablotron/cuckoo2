@@ -20,8 +20,9 @@ performance:
     insert (cuckoo/pre):  1.220sec (0.16109usec/word)
     lookup (cuckoo/pre):  1.082sec (0.14295usec/word)
 
-(You can run these tests on your machine by typing "make all" in the
-tests/benchmark directory).
+(Obviously these numbers are specific to my machine.  You can run these
+tests on your machine by typing "make all" in the tests/benchmark
+directory).
 
 The hashing algorithm used by libcuckoo is configurable.  By default,
 libcuckoo uses uses Bob Jenkin's excellent lookup3 function, although
@@ -30,14 +31,30 @@ information on changing the hashing algorithm.
 
 libcuckoo comes with several additional hashing algorithms 
 
-Interesting links:
 
-Paul Hsieh's Super Fast Hash:
-  http://www.azillionmonkeys.com/qed/hash.html
-Bob Jenkin's Lookup 3
-  http://burtleburtle.net/bob/hash/doobs.html
-See Also:
-  http://www.ipd.bth.se/ska/sim_home/hash_performance.html
+System Requirements
+===================
+A ANSI C99 compiler.  There are relatively few C99-isms in the code; I
+imagine libcuckoo could be updated to remove this requirement if
+necessary.
+
+In order to build the tests you'll need:
+
+* Ruby 1.8 (used to generate the test list)
+* GNU Make (I'm using some GNUisms in the Makefile)
+
+Finally, to build the library benchmark, you'll need:
+
+* GLib 2.0
+* Package Tool (used to find the dependencies for GLib)
+
+I should also note that libcuckoo is very 32-bit specific; I wouldn't
+count on it working out of the box on a 64-bit machine (unless you feel
+like sending me a 64-bit machine to test with, that is :D).
+
+You'll also need to change the hash algorithm for big-endian machines;
+see the "Advanced Usage" section for details.
+
 
 Usage
 =====
@@ -177,8 +194,8 @@ how to use iterators:
 Note that even though I'm using NULL-terminated strings as the keys and
 values above, libcuckoo does not require this.
 
-Anyway, that's all you need to get started.  The next section
-covers slightly more advanced topics like memory allocation and hashing
+Anyway, that's all you need to get started.  The next section covers
+slightly more advanced topics like memory allocation and hashing
 algorithms.
 
 
@@ -274,6 +291,19 @@ memory allocation:
 
 Note that you can use your config to create as many hash tables as you'd
 like.
+
+
+Links
+=====
+* Paul Hsieh's Super Fast Hash:
+  http://www.azillionmonkeys.com/qed/hash.html
+* Bob Jenkin's Lookup 3:
+  http://burtleburtle.net/bob/hash/doobs.html
+* Hash Library Benchmarks:
+  http://www.ipd.bth.se/ska/sim_home/hash_performance.html
+* A handful of common hash algorithms:
+  http://www.vak.ru/doku.php/proj/hash/sources
+
 
 About the Author
 ================
