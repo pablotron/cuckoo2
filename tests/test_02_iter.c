@@ -30,9 +30,11 @@ pairs[] = {
   { NULL,   NULL } 
 };
 
-void test_01_setget(int argc, char *argv[]) {
+void test_02_iter(int argc, char *argv[]) {
   ck_hash hash;
   ck_err err;
+  ck_iter iter;
+  ck_entry *e;
   char *key, *val, buf[1024];
   size_t i, len;
 
@@ -42,6 +44,7 @@ void test_01_setget(int argc, char *argv[]) {
   /* init hash */
   ck_init(&hash, NULL);
 
+  /* insert all values */
   for (i = 0; pairs[i].key; i++) {
     /* get key, key length, and value */
     key = pairs[i].key;
@@ -56,28 +59,23 @@ void test_01_setget(int argc, char *argv[]) {
     }
   }
 
-  /* get all results back */
-  for (i = 0; pairs[i].key; i++) {
-    /* get key, key length, and value */
-    key = pairs[i].key;
-    len = strlen(key) + 1;
-
-    if ((err = ck_get(&hash, key, len, NULL, (void*) &val)) != CK_OK) {
-      ck_strerror(err, buf, sizeof(buf));
-
-      fprintf(stderr, "error getting %s: %s\n", key, buf);
-
-      /* dump hash */
-      fprintf(stderr, "\nhash dump:\n");
-      ck_dump(&hash, stderr);
-      fprintf(stderr, "\n");
-
-      /* exit with failure */
-      exit(EXIT_FAILURE);
-    }
-    fprintf(stderr, "got %s => %s\n", key, val);
+  
+  if ((err = ck_iter_init(&iter, &hash)) != CK_OK) {
+    ck_strerror(err, buf, sizeof(buf));
+    fprintf(stderr, "error: couldn't initialize iterator: %s\n", buf);
+    exit(EXIT_FAILURE);
   }
 
+  /* walk through values in hash */
+  while ((err = ck_iter_next(&iter, &e)) == CK_OK) {
+    fprintf(stderr, "%s => %s\n", (char*) e->key, (char*) e->val);
+  }
+
+  if (err != CK_NONE) {
+    ck_strerror(err, buf, sizeof(buf));
+    fprintf(stderr, "error: iterator failed: %s\n", buf);
+    exit(EXIT_FAILURE);
+  }
 
 
   /* clean up hash */

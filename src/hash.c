@@ -308,6 +308,10 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
           ck_dump(hash, stderr);
 #endif /* CK_DEBUG */
 
+#ifdef CK_TRACK_STATS
+          hash->stats[CK_STAT_NUM_INSERTS]++;
+#endif /* CK_TRACK_STATS */
+  
           return CK_OK;
         }
 
@@ -329,10 +333,18 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       /* clear per-resize collision counter */
 #ifdef CK_TRACK_STATS
       hash->stats[CK_STAT_NUM_COLS] = 0;
-
-      /* increment the resize counter */
-      hash->stats[CK_STAT_NUM_COL_RESIZES]++;
 #endif /* CK_TRACK_STATS */
+
+      /*
+       * increment the resize counter
+       * 
+       * NOTE: we _always_ increment the resize counter, even with stat
+       * tracking disabled.  this is because the iterator interface uses
+       * the number of resizes to determine if it's synchronized with
+       * the hash
+       * 
+       */
+      hash->stats[CK_STAT_NUM_RESIZES]++;
 
       /* resize bins */
       DEBUG("resizing bins (%d resizes remaining)", num_resizes);
@@ -384,6 +396,10 @@ ck_rm(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
   e->key = NULL;
 
   hash->used--;
+
+#ifdef CK_TRACK_STATS
+  hash->stats[CK_STAT_NUM_DELETES]++;
+#endif /* CK_TRACK_STATS */
   
   /* return success */
   return CK_OK;
@@ -407,7 +423,7 @@ ck_dump(ck_hash *hash, FILE *io) {
     hash->used, hash->capa[0], hash->capa[1],
     hash->stats[CK_STAT_NUM_COLS],
     hash->stats[CK_STAT_TOTAL_COLS],
-    hash->stats[CK_STAT_NUM_COL_RESIZES] 
+    hash->stats[CK_STAT_NUM_RESIZES] 
   );
 
   for (i = 0; i < capa; i++)

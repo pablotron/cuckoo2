@@ -18,6 +18,7 @@ extern "C" {
 #include <cuckoo/ck_entry.h>
 #include <cuckoo/ck_cfg.h>
 #include <cuckoo/ck_hash.h>
+#include <cuckoo/ck_iter.h>
 
 #ifdef __cplusplus
 };

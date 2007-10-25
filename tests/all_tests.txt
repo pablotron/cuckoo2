@@ -1,3 +1,4 @@
 test_00_basic
 test_01_setget
+test_02_iter
 # test_01_foo

@@ -10,6 +10,7 @@ static char *err_strs[] = {
   "invalid error code",
   "too many resizes",
   "collision during resize",
+  "hash was resized (iterator invalid)",
   NULL
 };
 

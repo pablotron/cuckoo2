@@ -14,10 +14,16 @@ tests = File.readlines(src_path).map { |line|
   (line && line.size > 0) ? line  : nil
 }.compact
 
+FMT = [
+  "fprintf(stderr, \"[-- started __TEST__ --]\\n\");",
+  " __TEST__(argc, argv);",
+  "fprintf(stderr, \"[-- finished __TEST__ --]\\n\\n\");",
+].join(' ')
+
 # write c file
 File.open(dst_c_path, 'w') do |fh| 
   fh.puts '/* automatically generated from all_tests.txt */', 
-          tests.map { |test| "#{test}(argc, argv);" }
+          tests.map { |test| FMT.gsub(/__TEST__/, test) }
 end
 
 # write h file

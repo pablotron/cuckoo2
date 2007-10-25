@@ -6,3 +6,7 @@ syntax: glob
 cuckoo_test
 inc
 libcuckoo.so
+parse
+list.h
+list.c
+err.log
