@@ -20,15 +20,19 @@ free_wrapper(ck_hash *hash, void *ptr) {
 
 static ck_err
 do_resize_calc(ck_hash *hash, size_t *new_capa) {
+#ifdef CK_SAFETY_CHECKS
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
   if (!new_capa)
     return CK_ERR_NULL_BUF;
+#endif /* CK_SAFETY_CHECKS */
 
   /* default behavior is to double the size */
   new_capa[0] = 2 * hash->capa[0];
   new_capa[1] = 2 * hash->capa[1];
+
+  /* print out debugging information */
   DEBUG("old_capa = [%d, %d], new_capa = [%d, %d]", hash->capa[0], hash->capa[1], new_capa[0], new_capa[1]);
 
   /* return success */
@@ -47,7 +51,7 @@ default_config = {
   free_wrapper,
 
   /* hashing functions */
-  ck_hash_cb_hseish_jenkins3,
+  NULL,
   do_resize_calc,
 
   /* tunables */

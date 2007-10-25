@@ -1,6 +1,6 @@
 CC=c99
 # CFLAGS=-W -Wall -g -I../include -DCK_DEBUG
-CFLAGS=-W -Wall -g -I../include -pedantic
+CFLAGS=-W -Wall -O2 -I../include -pedantic
 LDFLAGS=
 LIBS=
 LIB=libcuckoo.so

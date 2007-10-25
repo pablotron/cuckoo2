@@ -140,3 +140,10 @@ ck_hash_cb_jenkins_hashword2(ck_hash *hash, void *key, size_t key_len, uint32_t 
   ck_hash_jenkins_hashword2(key, key_len, ret);
   return CK_OK;
 }
+
+ck_err 
+ck_hash_cb_jenkins_hashlittle2(ck_hash *hash, void *key, size_t key_len, uint32_t *ret) {
+  UNUSED(hash);
+  ck_hash_jenkins_hashlittle2(key, key_len, ret);
+  return CK_OK;
+}

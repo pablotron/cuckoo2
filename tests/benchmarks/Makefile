@@ -1,9 +1,9 @@
 APP=parse
 CC=c99
 INCS=-I../../include
-CFLAGS=-W -Wall -O2 -g $(INCS)
-LIBS=-lcuckoo -dl
-LDFLAGS=-L../../src $(LIBS)
+CFLAGS=-W -Wall -O2 $(INCS) `pkg-config --cflags glib-2.0`
+LIBS= `pkg-config --libs glib-2.0`
+LDFLAGS=-lcuckoo -L../../src $(LIBS)
 OBJS=parse.o
 
 all: $(APP) tests

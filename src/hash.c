@@ -4,9 +4,11 @@ static ck_err
 ck_init_with_size(ck_hash *hash, ck_cfg *cfg, size_t size) {
   uint32_t mod;
 
+#ifdef CK_SAFETY_CHECKS
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
 
   /* set default cfgions */
   if (!cfg)
@@ -54,67 +56,61 @@ ck_fini(ck_hash *hash) {
   return CK_OK;
 }
 
+#define DEFAULT_HASH ck_hash_jenkins_hashlittle2 
+#define KEY(h, k, kl, ret, ret_err)                       \
+  (ret_err) = (h)->cfg->hash ?                            \
+              (*((h)->cfg->hash))((h), (k), (kl), (ret)) : \
+              DEFAULT_HASH((k), (kl), (ret))
+
 ck_err 
 ck_key(ck_hash *hash, void *key, uint32_t key_len, uint32_t *ret) {
+  ck_err err;
+
+#ifdef CK_SAFETY_CHECKS
   if (!key || !key_len || !ret)
     return CK_ERR_NULL_BUF;
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
 
   /* hash value */
-  return (*(hash->cfg->hash))(hash, key, key_len, ret);
+  KEY(hash, key, key_len, ret, err);
+
+  /* return error */
+  return err;
 }
 
-static ck_err
-do_get_entry(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, ck_entry **ret) {
-  uint32_t i, ofs, k[2];
-  ck_err err;
-  ck_entry *e;
+#define GET_ENTRY(h, k, kl, pre_keys, ret, ret_err) do {                  \
+  ck_entry *te[2];                                                        \
+  uint32_t i, tk[2];                                                      \
+                                                                          \
+  if (!(pre_keys)) {                                                      \
+    KEY((h), (k), (kl), tk, (ret_err));                                   \
+    if ((ret_err) != CK_OK)                                               \
+      return (ret_err);                                                   \
+                                                                          \
+    (pre_keys) = tk;                                                      \
+  }                                                                       \
+                                                                          \
+  (ret_err) = CK_NONE;                                                    \
+                                                                          \
+  for (i = 0; i < 2; i++) {                                               \
+    te[i] = (h)->bins +                                                   \
+            (h)->capa[0] * i +                                            \
+            ((pre_keys)[i] % (h)->capa[i]);                               \
+                                                                          \
+    if (te[i]->key && te[i]->key_len == (kl) &&                           \
+        te[i]->keys[i] == (pre_keys)[i] &&                                \
+        (te[i]->key == (k) || !memcmp(te[i]->key, (k), (kl)))) {          \
+      if (ret)                                                            \
+         *(ret) = te[i];                                                  \
+                                                                          \
+      (ret_err) = CK_OK;                                                  \
+      break;                                                              \
+    }                                                                     \
+  }                                                                       \
+} while (0)
 
-  /* hash key */
-  if (!keys) {
-    if ((err = ck_key(hash, key, key_len, k)) != CK_OK)
-      return err;
-    keys = k;
-    DEBUG("%s => [%ld, %ld]", (char*) key, (unsigned long) keys[0], (unsigned long) keys[1]);
-  }
-
-  /* check each bin */
-  for (i = 0; i < 2; i++) {
-    /* get matching entry from bin */
-    ofs = (i ? hash->capa[0] : 0) + (keys[i] % hash->capa[i]);
-    e = hash->bins + ofs;
-
-    DEBUG("checking for %s in %d (key = %ld, capa = %ld", 
-          (char*) key, ofs, (unsigned long) keys[i], (unsigned long) hash->capa[i]);
-
-    /* check entry */
-    if (e->key && (e->keys[i] == keys[i]) && 
-        (e->key_len == key_len) && !memcmp(key, e->key, key_len)) {
-      /* save return value */
-      if (ret) 
-        *ret = e;
-
-      /* return success */
-      return CK_OK;
-    } else {
-#ifdef CK_DEBUG
-      if (!e->key)
-        DEBUG("checking for %s in %d: e->key == NULL", (char*) key, ofs);
-      else if (e->keys[i] != keys[i])
-        DEBUG("checking for %s in %d: e->keys[i] != keys[i]: %ld != %ld", 
-              (char*) key, ofs, (unsigned long) e->keys[i], (unsigned long) keys[i]);
-      else if (e->key_len != key_len)
-        DEBUG("checking for %s in %d: e->key_len != key_len", (char*) key, ofs);
-      else if (!memcmp(key, e->key, key_len))
-        DEBUG("checking for %s in %d: memcmp != 0", (char*) key, ofs);
-#endif /* CK_DEBUG */
-    }
-  }
-
-  /* return not found */
-  return CK_NONE;
-}
 
 static ck_err
 do_resize(ck_hash *hash) {
@@ -123,9 +119,11 @@ do_resize(ck_hash *hash) {
   size_t i, ofs, old_used, old_capa, 
          new_capa[2], new_size;
   
+#ifdef CK_SAFETY_CHECKS
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
   
   /* calculate new size */
   if ((err = (*(hash->cfg->resize))(hash, new_capa)) != CK_OK)
@@ -235,14 +233,17 @@ ck_get(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
   ck_err err;
   ck_entry *e;
 
+#ifdef CK_SAFETY_CHECKS
   /* null checks */
   if (!key || !key_len)
     return CK_ERR_NULL_BUF;
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
 
   /* find entry */
-  if ((err = do_get_entry(hash, key, key_len, keys, &e)) != CK_OK)
+  GET_ENTRY(hash, key, key_len, keys, &e, err);
+  if (err != CK_OK)
     return err;
 
   /* save return value */
@@ -261,7 +262,8 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
 
   /* hash key */
   if (!keys) {
-    if ((err = ck_key(hash, key, key_len, k)) != CK_OK)
+    KEY(hash, key, key_len, k, err);
+    if (err != CK_OK)
       return err;
     keys = k;
 
@@ -309,9 +311,11 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
           return CK_OK;
         }
 
+#ifdef CK_TRACK_STATS
         /* increment the collision counters */
         hash->stats[CK_STAT_NUM_COLS]++;
         hash->stats[CK_STAT_TOTAL_COLS]++;
+#endif /* CK_TRACK_STATS */
       }
     } while (num_tries-- > 0);
 
@@ -323,10 +327,12 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
 
     if (num_resizes > 0) {
       /* clear per-resize collision counter */
+#ifdef CK_TRACK_STATS
       hash->stats[CK_STAT_NUM_COLS] = 0;
 
       /* increment the resize counter */
       hash->stats[CK_STAT_NUM_COL_RESIZES]++;
+#endif /* CK_TRACK_STATS */
 
       /* resize bins */
       DEBUG("resizing bins (%d resizes remaining)", num_resizes);
@@ -356,13 +362,15 @@ ck_rm(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
   ck_err err;
   ck_entry *e;
 
+#ifdef CK_SAFETY_CHECKS
   /* null checks */
   if (!key || !key_len || !keys)
     return CK_ERR_NULL_BUF;
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
 
-  err = do_get_entry(hash, key, key_len, keys, &e);
+  GET_ENTRY(hash, key, key_len, keys, &e, err);
   if (err == CK_NONE)
     return CK_OK;
   if (err != CK_OK)
@@ -384,8 +392,11 @@ ck_rm(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
 ck_err
 ck_dump(ck_hash *hash, FILE *io) {
   size_t i, capa;
+
+#ifdef CK_SAFETY_CHECKS
   if (!hash)
     return CK_ERR_NULL_HASH;
+#endif /* CK_SAFETY_CHECKS */
 
   /* print all entries to io stream */
   capa = hash->capa[0] + hash->capa[1];

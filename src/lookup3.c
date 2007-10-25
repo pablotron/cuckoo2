@@ -791,6 +791,13 @@ ck_hash_jenkins_lookup3(const void *data, size_t len) {
   return hashlittle(data, len, 0);
 }
 
+ck_err
+ck_hash_jenkins_hashlittle2(const void *data, size_t len, uint32_t *ret) {
+  ret[0] = ret[1] = 0;
+  hashlittle2(data, len, ret, ret + 1);
+  return CK_OK;
+}
+
 void
 ck_hash_jenkins_hashword2(const void *data, size_t len, uint32_t *ret) {
   hashword2(data, len, ret, ret + 1);
