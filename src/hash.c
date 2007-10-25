@@ -24,6 +24,7 @@ ck_init_with_size(ck_hash *hash, ck_cfg *cfg, size_t size) {
   /* allocate bins */
   if ((hash->bins = (*(cfg->malloc))(hash, size * sizeof(ck_entry))) == NULL)
     return CK_ERR_NOMEM;
+  memset(hash->bins, 0, size * sizeof(ck_entry));
 
   /* populate bin capacities */
   hash->capa[0] = 2 * size / 3;
@@ -97,6 +98,7 @@ do_get_entry(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, ck_entr
       /* return success */
       return CK_OK;
     } else {
+#ifdef CK_DEBUG
       if (!e->key)
         DEBUG("checking for %s in %d: e->key == NULL", (char*) key, ofs);
       else if (e->keys[i] != keys[i])
@@ -106,6 +108,7 @@ do_get_entry(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, ck_entr
         DEBUG("checking for %s in %d: e->key_len != key_len", (char*) key, ofs);
       else if (!memcmp(key, e->key, key_len))
         DEBUG("checking for %s in %d: memcmp != 0", (char*) key, ofs);
+#endif /* CK_DEBUG */
     }
   }
 
@@ -114,18 +117,26 @@ do_get_entry(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, ck_entr
 }
 
 static ck_err
-do_resize(ck_hash *hash, size_t *new_capa) {
+do_resize(ck_hash *hash) {
   ck_entry *new_bins;
-  size_t i, ofs, old_used, old_capa, new_size;
+  ck_err err;
+  size_t i, ofs, old_used, old_capa, 
+         new_capa[2], new_size;
   
   /* check for return buffer */
   if (!hash)
     return CK_ERR_NULL_HASH;
-
+  
+  /* calculate new size */
+  if ((err = (*(hash->cfg->resize))(hash, new_capa)) != CK_OK)
+    return err;
+     
+#ifdef CK_DEBUG
   DEBUG("old_capa = [%d, %d], new_capa = [%d, %d]", hash->capa[0], hash->capa[1], new_capa[0], new_capa[1]);
 
   DEBUG("old hash (before resize):");
   ck_dump(hash, stderr);
+#endif /* CK_DEBUG */
 
   /* calculate total old capacity (in entries), total 
    * old used (in entries), and new total size (in bytes) */
@@ -210,8 +221,10 @@ do_resize(ck_hash *hash, size_t *new_capa) {
   (*(hash->cfg->free))(hash, hash->bins);
   hash->bins = new_bins;
 
+#ifdef CK_DEBUG
   DEBUG("new hash (after resize):");
   ck_dump(hash, stderr);
+#endif /* CK_DEBUG */
 
   /* return success */
   return CK_OK;
@@ -242,7 +255,7 @@ ck_get(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void **ret) {
 
 ck_err 
 ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
-  uint32_t i, k[2], new_capa[2], num_tries, num_resizes;
+  uint32_t i, k[2], num_tries, num_resizes;
   ck_err err;
   ck_entry *e, oe, ne;
 
@@ -251,6 +264,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
     if ((err = ck_key(hash, key, key_len, k)) != CK_OK)
       return err;
     keys = k;
+
     DEBUG("%s => [%d, %d]", (char*) key, keys[0] % hash->capa[0], keys[1] % hash->capa[1]);
   }
 
@@ -273,7 +287,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       for (i = 0; i < 2; i++) {
         /* get matching entry from bin */
         e = hash->bins + (i ? hash->capa[0] : 0) + (ne.keys[i] % hash->capa[i]);
-          DEBUG("e = %p, bins = %p", (void*) e, (void*) hash->bins);
+        DEBUG("e = %p, bins = %p", (void*) e, (void*) hash->bins);
 
         /* save old entry and write new entry */
         oe = *e;
@@ -287,6 +301,11 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
             (e->keys[0] == ne.keys[0] && e->keys[1] == ne.keys[1])) {
           DEBUG("setting %d to %s:%s", e - hash->bins, (char*) e->key, (char*) e->val);
           hash->used++;
+
+#ifdef CK_DEBUG
+          ck_dump(hash, stderr);
+#endif /* CK_DEBUG */
+
           return CK_OK;
         }
 
@@ -311,8 +330,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
 
       /* resize bins */
       DEBUG("resizing bins (%d resizes remaining)", num_resizes);
-      if ((err = (*(hash->cfg->resize))(hash, new_capa)) != CK_OK ||
-          (err = do_resize(hash, new_capa)) != CK_OK) {
+      if ((err = do_resize(hash)) != CK_OK) {
         /* couldn't resize the bins; save the failed entry and return
          * the error */
 
@@ -371,6 +389,16 @@ ck_dump(ck_hash *hash, FILE *io) {
 
   /* print all entries to io stream */
   capa = hash->capa[0] + hash->capa[1];
+
+  fprintf(
+    io, 
+    "{used: %d, capa: [%d, %d], stats: {cols: %d, total_cols: %d, resizes: %d}}\n",
+    hash->used, hash->capa[0], hash->capa[1],
+    hash->stats[CK_STAT_NUM_COLS],
+    hash->stats[CK_STAT_TOTAL_COLS],
+    hash->stats[CK_STAT_NUM_COL_RESIZES] 
+  );
+
   for (i = 0; i < capa; i++)
     if (hash->bins[i].key)
       fprintf(io, "%03d:%s:%s\n", i, (char*) hash->bins[i].key, (char*) hash->bins[i].val);

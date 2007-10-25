@@ -11,7 +11,7 @@ typedef enum {
   /* number of resizes due to collisions */
   CK_STAT_NUM_COL_RESIZES
 } ck_stat_t;
-#define CK_STAT_LAST 2
+#define CK_STAT_LAST 3
 
 ck_err ck_stat_describe(ck_stat_t s, char *buf, size_t buf_len);
 

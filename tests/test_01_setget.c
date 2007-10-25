@@ -62,7 +62,7 @@ void test_01_setget(int argc, char *argv[]) {
     key = pairs[i].key;
     len = strlen(key) + 1;
 
-    if ((err = ck_get(&hash, key, len, NULL, &val)) != CK_OK) {
+    if ((err = ck_get(&hash, key, len, NULL, (void*) &val)) != CK_OK) {
       ck_strerror(err, buf, sizeof(buf));
 
       fprintf(stderr, "error getting %s: %s\n", key, buf);

@@ -19,6 +19,7 @@ struct ck_hash_st {
 #define CK_USED(h) ((h)->used)
 #define CK_CAPA(h) ((h)->capa[0] + (h)->capa[1])
 #define CK_HAS(h, k, kl, kz) (ck_get((h), (k), (kl), (kz), NULL) != CK_NONE)
+#define CK_GET_STAT(h, s) ((h)->stats[(s)])
 
 ck_err ck_init(ck_hash *hash, ck_cfg *);
 ck_err ck_fini(ck_hash *hash);
