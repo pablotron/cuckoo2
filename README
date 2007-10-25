@@ -1,4 +1,4 @@
-LibCuckoo 0.1.0 README
+libcuckoo 0.1.0 README
 ======================
 
 libcuckoo is a fast, simple, and memory-efficient hash table
@@ -7,19 +7,28 @@ times stack up on my machine against the hash table implementations in
 glibc and glib 2.0:
 
     Results (7572007 words):
-    insert (cuckoo):     1.765sec (0.23314usec/word)
-    lookup (cuckoo):     1.645sec (0.21722usec/word)
-    insert (glib):       2.037sec (0.26896usec/word)
-    lookup (glib):       1.922sec (0.25389usec/word)
-    insert (glibc):      2.037sec (0.25268usec/word)
-    lookup (glibc):      1.922sec (0.23852usec/word)
+    insert (cuckoo):      1.765sec (0.23314usec/word)
+    lookup (cuckoo):      1.645sec (0.21722usec/word)
+    insert (glib):        2.037sec (0.26896usec/word)
+    lookup (glib):        1.922sec (0.25389usec/word)
+    insert (glibc):       2.037sec (0.25268usec/word)
+    lookup (glibc):       1.922sec (0.23852usec/word)
 
-On my machine, 
 For lookup-heavy problems, you can pre-hash keys for even better
 performance:
 
-(By the way, you can run these tests on your machine by typing "make
-all" in the tests/benchmark directory).
+    insert (cuckoo/pre):  1.220sec (0.16109usec/word)
+    lookup (cuckoo/pre):  1.082sec (0.14295usec/word)
+
+(You can run these tests on your machine by typing "make all" in the
+tests/benchmark directory).
+
+The hashing algorithm used by libcuckoo is configurable.  By default,
+libcuckoo uses uses Bob Jenkin's excellent lookup3 function, although
+this is configurable; see the "Advanced Usage" section below for
+information on changing the hashing algorithm.
+
+libcuckoo comes with several additional hashing algorithms 
 
 Interesting links:
 
@@ -165,8 +174,11 @@ how to use iterators:
       return EXIT_SUCCESS;
     }
 
-That's all you need to know to get started.  The next section covers
-slightly more advanced topics like memory allocation and hashing
+Note that even though I'm using NULL-terminated strings as the keys and
+values above, libcuckoo does not require this.
+
+Anyway, that's all you need to get started.  The next section
+covers slightly more advanced topics like memory allocation and hashing
 algorithms.
 
 
