@@ -8,16 +8,17 @@ Table of Contents
   2. System Requirements
   3. Usage
   4. Advanced Usage
-  5. Links
-  6. About the Author
+  5. Included Hash Functions
+  6. Links
+  7. About the Author
 
 
 1. Overview
 ===========
-libcuckoo is a fast, simple, and memory-efficient hash table
-library.  libcuckoo is extremely fast; here's how the insert and lookup
-times stack up on my machine against the hash table implementations in
-glibc and glib 2.0:
+libcuckoo is a fast, simple, and memory-efficient Cuckoo hash table
+implementation.  libcuckoo is extremely fast; here's how the insert and
+lookup times stack up on my machine against the hash table
+implementations in glibc and glib 2.0:
 
     Results (7572007 words):
     insert (cuckoo):      1.765sec (0.23314usec/word)
@@ -37,12 +38,23 @@ performance:
 tests on your machine by typing "make all" in the tests/benchmark
 directory).
 
-The hashing algorithm used by libcuckoo is configurable.  By default,
-libcuckoo uses uses Bob Jenkin's excellent lookup3 function, although
-this is configurable; see the "Advanced Usage" section below for
-information on changing the hashing algorithm.
+The insert and lookup speed are a byproduct of the hashing method.
+libcuckoo uses cuckoo hashing, while most common hash tables use linear
+probing, chained hashing, or double hashing.  A detailed explanataion of
+Cuckoo hashing is available at the following URL:
 
-libcuckoo comes with several additional hashing algorithms 
+    http://en.wikipedia.org/wiki/Cuckoo_hashing
+
+The hash function used by libcuckoo is configurable.  libcuckoo uses
+hashlittle2, a variant of Bob Jenkin's lookup3 hash.  hashlittle2 was
+chosen because it's speed, excellent overall hashing properties, and the
+fact that it provides a second 32-bit hash for "free".  If you'd like to
+use a different hash function, see the "Advanced Usage" section below
+for instructions.
+
+libcuckoo also comes with a handful of additional public domain hash
+functions.  All of these functions are described in the "Included Hash
+Functions" section below and  may be used independently of libcuckoo.
 
 
 2. System Requirements
@@ -305,8 +317,116 @@ memory allocation:
 Note that you can use your config to create as many hash tables as you'd
 like.
 
+Next up is the hash function.  Technically libcuckoo uses two hash
+functions: one for the first bucket, and one for the second.  This is
+why hashlittle2 is the default hash function; because we get the second
+hash for "free".  That said, here's how to switch the hash function to
+something else:
 
-5. Links
+    /* headers omitted for brevity... */
+
+    static ck_err
+    my_hash(ck_hash *hash, void *buf, size_t buf_len, uint32_t *ret) {
+      /* use LV as the first hash, and DJB as the second */
+      ret[0] = ck_hash_lv(buf, buf_len);
+      ret[0] = ck_hash_djb(buf, buf_len);
+
+      /* return success */
+      return CK_OK;
+    }
+
+    int main(int argc, char *argv[]) {
+      ck_hash hash;
+      ck_cfg cfg;
+      ck_err err;
+      char buf[1024];
+
+      /* initialize table config */
+      err = ck_cfg_init(&cfg);
+      assert_ok(err, "init table config"); 
+
+      /* set custom hash function */
+      cfg.hash = my_hash;
+
+      /* create a hash table using custom config */
+      err = ck_init(&hash, &cfg);
+      assert_ok(err, "create hash table"); 
+
+      /* do stuff here... */
+
+      /* free hash table */
+      err = ck_fini(&hash);
+      assert_ok(err, "free hash table");
+
+      /* return success */
+      return EXIT_SUCCESS;
+    }
+
+5. Included Hash Functions
+==========================
+Several additional public domain hash functions are included with
+libcuckoo.  The default hash function is hashlittle2, a variant on Bob
+Jenkin's lookup3, but depending on your requirements something else may
+be more appropriate.  In no particular order, the hash functions are:
+
+  * Paul Hsieh's Super Fast Hash (ck_hash_superfast)
+    http://www.azillionmonkeys.com/qed/hash.html
+
+  * Bob Jenkin's Lookup 3 Hash (ck_hash_jenkins_lookup3)
+    http://burtleburtle.net/bob/hash/doobs.html
+
+  * Fowler / Noll / Vo (FNV) Hash (ck_hash_fnv)
+    http://www.isthe.com/chongo/tech/comp/fnv/ 
+
+  * AlphaNum Hash (ck_hash_alphanum) [1]
+    (source: Paul Hsieh's test suite)
+
+  * Robert Sedgwick's RS Hash (ck_hash_rs)
+    http://www.vak.ru/doku.php/proj/hash/sources
+    (source: "Algorithms in C", by Robert Sedgwick)
+
+  * Justin Sobel's JS Hash (ck_hash_js)
+    http://www.vak.ru/doku.php/proj/hash/sources
+
+  * PJ Weinberger Hash (ck_hash_pjw)
+    http://www.vak.ru/doku.php/proj/hash/sources
+    (source: "Compilers (Principles, Techniques and Tools)")
+
+  * ELF Hash (ck_hash_elf)
+    http://www.vak.ru/doku.php/proj/hash/sources
+
+  * BKDR Hash (ck_hash_bkdr)
+    http://www.vak.ru/doku.php/proj/hash/sources
+    (source: "The C Programming Language")
+
+  * SDBM Hash (ck_hash_sdbm)
+    http://www.vak.ru/doku.php/proj/hash/sources
+
+  * DJB Hash (ck_hash_djb) [1]
+    http://www.vak.ru/doku.php/proj/hash/sources
+    (source: Daniel J. Bernstein on comp.lang.c)
+
+  * DEK Hash (ck_hash_dek)
+    http://www.vak.ru/doku.php/proj/hash/sources
+
+  * LY Hash Function (ck_hash_ly)
+    http://www.vak.ru/doku.php/proj/hash/sources
+    (source: http://leo.yuriev.ru/random)
+
+  * ROT13 Hash Function (ck_hash_rot13)
+    http://www.vak.ru/doku.php/proj/hash/sources
+
+[1] Note that ck_hash_alphanum and ck_hash_djb are identical, 
+    except for the hash seed (0 vs. 5381).  It's not clear to me if
+    these are actually separate algorithms or if someone accidentally
+    typed it incorrectly, so I've included both for reference.
+
+By the way, if you know of a function that's public domain and not
+listed here, let me know; I'd love to include it with everything else
+for reference.
+
+
+6. Links
 ========
 * Paul Hsieh's Super Fast Hash:
   http://www.azillionmonkeys.com/qed/hash.html
@@ -318,7 +438,7 @@ like.
   http://www.vak.ru/doku.php/proj/hash/sources
 
 
-6. About the Author
+7. About the Author
 ===================
 Paul Duncan <pabs@pablotron.org>
 http://pablotron.org/

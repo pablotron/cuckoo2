@@ -1,4 +1,9 @@
 libcuckoo TODO
 ==============
-[ ] implement hashes from http://www.vak.ru/doku.php/proj/hash/sources
+[x] implement hashes from http://www.vak.ru/doku.php/proj/hash/sources
+[ ] testing of the speed and distribution of the various hash functions
+    (simple timed bucket test with random bytes and words?)
+[ ] test of the default cfg parameters
+[ ] add perl, python, and ruby hash functions.
+[ ] clean up parse.c (separate cuckoo hash into different functions)
 
