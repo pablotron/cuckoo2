@@ -8,7 +8,6 @@
  * (see ck_hash_jenkins_lookup3() at the end of this file)
  *
  */
-uint32_t ck_hash_lookup3(const void *, size_t);
 
 /*
 -------------------------------------------------------------------------------
@@ -788,7 +787,9 @@ hashbig( const void *key, size_t length, uint32_t initval)
 
 uint32_t
 ck_hash_jenkins_lookup3(const void *data, size_t len) {
-  return hashlittle(data, len, 0);
+  /* calculate new length */
+  len = (len + (len % sizeof(uint32_t) ? 0 : 1)) / sizeof(uint32_t);
+  return hashword(data, len, 0);
 }
 
 ck_err
@@ -798,7 +799,9 @@ ck_hash_jenkins_hashlittle2(const void *data, size_t len, uint32_t *ret) {
   return CK_OK;
 }
 
-void
+ck_err
 ck_hash_jenkins_hashword2(const void *data, size_t len, uint32_t *ret) {
+  ret[0] = ret[1] = 0;
   hashword2(data, len, ret, ret + 1);
+  return CK_OK;
 }
