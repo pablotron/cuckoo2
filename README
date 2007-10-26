@@ -1,6 +1,19 @@
 libcuckoo 0.1.0 README
 ======================
 
+Table of Contents
+=================
+
+  1. Overview
+  2. System Requirements
+  3. Usage
+  4. Advanced Usage
+  5. Links
+  6. About the Author
+
+
+1. Overview
+===========
 libcuckoo is a fast, simple, and memory-efficient hash table
 library.  libcuckoo is extremely fast; here's how the insert and lookup
 times stack up on my machine against the hash table implementations in
@@ -32,8 +45,8 @@ information on changing the hashing algorithm.
 libcuckoo comes with several additional hashing algorithms 
 
 
-System Requirements
-===================
+2. System Requirements
+======================
 A ANSI C99 compiler.  There are relatively few C99-isms in the code; I
 imagine libcuckoo could be updated to remove this requirement if
 necessary.
@@ -56,8 +69,8 @@ You'll also need to change the hash algorithm for big-endian machines;
 see the "Advanced Usage" section for details.
 
 
-Usage
-=====
+3. Usage
+========
 To create a new hash table:
 
     ck_hash hash;
@@ -199,8 +212,8 @@ slightly more advanced topics like memory allocation and hashing
 algorithms.
 
 
-Advanced Usage
-==============
+4. Advanced Usage
+=================
 This section explains how to customize the memory allocation, hashing
 algorithms, and resize behavior of libcuckoo.  Let's start with the
 memory allocation:
@@ -293,8 +306,8 @@ Note that you can use your config to create as many hash tables as you'd
 like.
 
 
-Links
-=====
+5. Links
+========
 * Paul Hsieh's Super Fast Hash:
   http://www.azillionmonkeys.com/qed/hash.html
 * Bob Jenkin's Lookup 3:
@@ -305,7 +318,7 @@ Links
   http://www.vak.ru/doku.php/proj/hash/sources
 
 
-About the Author
-================
+6. About the Author
+===================
 Paul Duncan <pabs@pablotron.org>
 http://pablotron.org/
