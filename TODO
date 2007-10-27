@@ -7,4 +7,8 @@ libcuckoo TODO
 [ ] add perl, python, and ruby hash functions.
 [ ] clean up parse.c (separate cuckoo hash into different functions)
 [x] bit bias test:
-[ ] better numbers for distribution test in hash.c
+[-] better numbers for distribution test in hash.c
+[ ] fix hash_test distribution output
+[ ] timing test on amd
+[ ] test with binary strings
+[ ] better distribution numbers (maybe per-bin size?)

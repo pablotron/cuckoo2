@@ -140,16 +140,16 @@ static void
 dump_results(size_t num_words) {
   size_t i, j;
   double bias, bias_min, bias_max, bias_ave, bias_dev,
-         dist_min, dist_max, dist_dev;
+         div, dist_min, dist_max, dist_dev;
 
   for (i = 0; hashes[i].name; i++) {
     bias_ave = bias_dev = dist_dev = 0.0;
     bias_min = dist_min = num_words;
-    bias_max = dist_max = 0 - num_words;
+    bias_max = dist_max = 0.0;
 
     /* calculate min/max/ave bit bias */
     for (j = 0; j < NUM_BITS; j++) {
-      bias = hashes[i].bias[j];
+      bias = hashes[i].bias[j] * 1.0 / num_words;
 
       if (bias < bias_min)
         bias_min = bias;
@@ -162,23 +162,21 @@ dump_results(size_t num_words) {
 
     /* calculate bit bias std deviation */
     for (j = 0; j < NUM_BITS; j++) {
-      bias = hashes[i].bias[j] / num_words;
+      bias = hashes[i].bias[j] * 1.0 / num_words;
       bias_dev += pow(bias_ave - bias, 2);
     }
     bias_dev = sqrt(bias_dev / NUM_BITS);
 
     for (j = 0; j < NUM_BINS; j++) {
-      if (hashes[i].stats[j].min * 1.0 / BIN_SIZE(j) < dist_min)
-        dist_min = hashes[i].stats[j].min * 1.0 / BIN_SIZE(j);
-      if (hashes[i].stats[j].max * 1.0 / BIN_SIZE(j) > dist_max)
-        dist_max = hashes[i].stats[j].max * 1.0 / BIN_SIZE(j);
-      dist_dev += hashes[i].stats[j].dev / BIN_SIZE(j);
-    }
-    dist_dev /= NUM_BINS * num_words;
+      div = BIN_SIZE(j) * num_words;
 
-    /* XXX: is this correct? */
-    dist_min /= num_words;
-    dist_max /= num_words;
+      if (hashes[i].stats[j].min / div < dist_min)
+        dist_min = hashes[i].stats[j].min / div;
+      if (hashes[i].stats[j].max / div > dist_max)
+        dist_max = hashes[i].stats[j].max / div;
+      dist_dev += hashes[i].stats[j].dev / div;
+    }
+    dist_dev /= NUM_BINS;
 
     printf(
       /* name,time,time_per_word, */
@@ -192,10 +190,11 @@ dump_results(size_t num_words) {
 
       /* name,time,time_per_word, */
       hashes[i].name, hashes[i].time, 
-      hashes[i].time / num_words * 1000000,
+      hashes[i].time / num_words * 1000000000,
 
       /* bias_ave,bias_dev,bias_min,bias_max, */
-      bias_ave, bias_dev, bias_min, bias_max,
+      bias_ave * 100.0, bias_dev * 100.0, 
+      bias_min * 100.0, bias_max * 100.0,
 
       /* dist_mean_dev_pct,dist_min_pct,dist_max_pct */
       dist_dev * 100.0, dist_min * 100.0, dist_max * 100.0
@@ -220,7 +219,7 @@ int main(int argc, char *argv[]) {
 
   /* check for required argument */
   if (argc < 2) {
-    fprintf(stderr, "Usage: %s <file>\n", argv[0]);
+    LOG("Usage: %s <file>", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -301,8 +300,8 @@ int main(int argc, char *argv[]) {
         }
         break;
       default:
-        fprintf(stderr, "unknown state: %d\n", state);
-        exit(-1);
+        LOG("unknown state: %d", state);
+        exit(EXIT_FAILURE);
       }
     }
   }
@@ -355,9 +354,10 @@ int main(int argc, char *argv[]) {
   );
 
   printf(
-    "name,time,time_per_word,"
-    "bias_ave,bias_dev,bias_min,bias_max,"
-    "dist_mean_dev_pct,dist_min_pct,dist_min,dist_max_pct"
+    "name,total time (sec),time (nsec/word),"
+    "bias_ave_pct (0 is best),bias_dev_pct (0 is best),"
+    "bias_min_pct (0 is best),bias_max_pct (0 is best),"
+    "dist_mean_dev_pct,dist_min_pct,dist_max_pct"
     "\n"
   );
   dump_results(num_words);

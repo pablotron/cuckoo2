@@ -32,7 +32,7 @@ $(TABLE_APP): $(TABLE_OBJS)
 hash_test: $(HASH_APP)
 	rm -f ./fifo
 	mkfifo ./fifo
-	zcat ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz > ./fifo &
+	zcat ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz > ./fifo &
 	LD_LIBRARY_PATH="../../src" ./$(HASH_APP) ./fifo
 
 hash_debug: $(HASH_APP)
