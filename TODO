@@ -6,4 +6,13 @@ libcuckoo TODO
 [ ] test of the default cfg parameters
 [ ] add perl, python, and ruby hash functions.
 [ ] clean up parse.c (separate cuckoo hash into different functions)
+[x] bit bias test:
+
+    #define NUM_BITS (sizeof(uint32_t) * 8)
+    int bias[NUM_BITS];
+
+    memset(bias, 0, sizeof(bias) * sizeof(int));
+
+    for (i = 0; i < NUM_BITS; i++)
+      bias[i] += val & (1 << i) ? 1 : -1;
 

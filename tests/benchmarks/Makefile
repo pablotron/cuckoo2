@@ -1,30 +1,51 @@
-APP=parse
+TABLE_APP=table
+HASH_APP=hash
+
 CC=c99
 INCS=-I../../include
 CFLAGS=-W -Wall -O2 $(INCS) `pkg-config --cflags glib-2.0`
 LIBS= `pkg-config --libs glib-2.0`
 LDFLAGS=-lcuckoo -L../../src $(LIBS)
-OBJS=parse.o
+
+TABLE_OBJS=table.o
+HASH_OBJS=hash.o
 
 all: $(APP) tests
 
-tests: $(APP)
+tests: table_test hash_test
+
+table_test: $(TABLE_APP)
 	rm -f ./fifo
 	mkfifo ./fifo
 	zcat ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz > ./fifo &
-	LD_LIBRARY_PATH="../../src" ./$(APP) ./fifo
+	LD_LIBRARY_PATH="../../src" ./$(TABLE_APP) ./fifo
 
-debug: $(APP)
+table_debug: $(TABLE_APP)
 	rm -f ./fifo
 	mkfifo fifo
 	zcat ./data/*.gz > fifo &
 	LD_LIBRARY_PATH="../../src" gdb ./$(APP)
 
-$(APP): $(OBJS)
-	$(CC) -o $(APP) $(OBJS) $(LDFLAGS)
+$(TABLE_APP): $(TABLE_OBJS)
+	$(CC) -o $(TABLE_APP) $(TABLE_OBJS) $(LDFLAGS)
+
+hash_test: $(HASH_APP)
+	rm -f ./fifo
+	mkfifo ./fifo
+	zcat ./data/*.gz ./data/*.gz ./data/*.gz ./data/*.gz > ./fifo &
+	LD_LIBRARY_PATH="../../src" ./$(HASH_APP) ./fifo
+
+hash_debug: $(HASH_APP)
+	rm -f ./fifo
+	mkfifo fifo
+	zcat ./data/*.gz > fifo &
+	LD_LIBRARY_PATH="../../src" gdb ./$(APP)
+
+$(HASH_APP): $(HASH_OBJS)
+	$(CC) -o $(HASH_APP) $(HASH_OBJS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(APP) $(OBJS)
+	rm -f $(TABLE_APP) $(TABLE_OBJS) $(HASH_APP) $(HASH_OBJS)

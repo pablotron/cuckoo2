@@ -786,10 +786,10 @@ hashbig( const void *key, size_t length, uint32_t initval)
 }
 
 uint32_t
-ck_hash_jenkins_lookup3(const void *data, size_t len) {
+ck_hash_jenkins_lookup3(char *data, size_t len) {
   /* calculate new length */
   len = (len + (len % sizeof(uint32_t) ? 0 : 1)) / sizeof(uint32_t);
-  return hashword(data, len, 0);
+  return hashword((void*) data, len, 0);
 }
 
 ck_err

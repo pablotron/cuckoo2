@@ -4,10 +4,10 @@
 /******************************/
 /* INDIVIDUAL HASH ALGORITHMS */
 /******************************/
-uint32_t ck_hash_superfast(const char *, int);
-uint32_t ck_hash_fnv(const char *, int);
-uint32_t ck_hash_alphanum(const char *, int);
-uint32_t ck_hash_jenkins_lookup3(const void *, size_t);
+uint32_t ck_hash_superfast(char *, size_t);
+uint32_t ck_hash_fnv(char *, size_t);
+uint32_t ck_hash_alphanum(char *, size_t);
+uint32_t ck_hash_jenkins_lookup3(char *, size_t);
 
 uint32_t ck_hash_rs(char *str, size_t len);
 uint32_t ck_hash_js(char *str, size_t len);
@@ -18,7 +18,7 @@ uint32_t ck_hash_sdbm(char *str, size_t len);
 uint32_t ck_hash_djb(char *str, size_t len);
 uint32_t ck_hash_dek(char *str, size_t len);
 uint32_t ck_hash_ly(char *str, size_t len);
-uint32_t ck_hash_rot13(char *str, uint32_t len);
+uint32_t ck_hash_rot13(char *str, size_t len);
 
 ck_err ck_hash_jenkins_hashlittle2(const void *, size_t, uint32_t *);
 ck_err ck_hash_jenkins_hashword2(const void *data, size_t len, uint32_t *ret);

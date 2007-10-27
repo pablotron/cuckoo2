@@ -39,7 +39,7 @@
  *
  */
 uint32_t 
-ck_hash_superfast(const char * data, int len) {
+ck_hash_superfast(char * data, size_t len) {
   uint32_t hash = 0, tmp;
   int rem;
 
@@ -91,8 +91,8 @@ ck_hash_superfast(const char * data, int len) {
  * 
  */
 uint32_t 
-ck_hash_fnv(const char * data, int len) {
-  int i;
+ck_hash_fnv(char * data, size_t len) {
+  size_t i;
   uint32_t hash;
 
   hash = UINT32_C(2166136261);
@@ -107,9 +107,9 @@ ck_hash_fnv(const char * data, int len) {
  * Torek or Dan Bernstein (no URL available).
  */
 uint32_t 
-ck_hash_alphanum(const char * s, int len) {
+ck_hash_alphanum(char * s, size_t len) {
   uint32_t h; 
-  int i;
+  size_t i;
 
   for (h = 0, i = 0; i < len; i++)
     h = (h << 5) + (h * 5) + (unsigned char) s[i];
@@ -282,7 +282,7 @@ ck_hash_ly(char *str, size_t len) {
  */
 
 uint32_t 
-ck_hash_rot13(char *str, uint32_t len) {
+ck_hash_rot13(char *str, size_t len) {
   uint32_t hash = 0;
  
   while (len-- && str++) {
