@@ -3,8 +3,8 @@ HASH_APP=hash
 
 CC=c99
 INCS=-I../../include
-CFLAGS=-W -Wall -O2 $(INCS) `pkg-config --cflags glib-2.0`
-LIBS= `pkg-config --libs glib-2.0`
+CFLAGS=-W -Wall -O2 $(INCS) -g `pkg-config --cflags glib-2.0`
+LIBS= `pkg-config --libs glib-2.0` -lm
 LDFLAGS=-lcuckoo -L../../src $(LIBS)
 
 TABLE_OBJS=table.o
@@ -39,7 +39,7 @@ hash_debug: $(HASH_APP)
 	rm -f ./fifo
 	mkfifo fifo
 	zcat ./data/*.gz > fifo &
-	LD_LIBRARY_PATH="../../src" gdb ./$(APP)
+	LD_LIBRARY_PATH="../../src" gdb ./$(HASH_APP)
 
 $(HASH_APP): $(HASH_OBJS)
 	$(CC) -o $(HASH_APP) $(HASH_OBJS) $(LDFLAGS)

@@ -9,12 +9,17 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <time.h>
+#include <math.h>
 
 #include <cuckoo/cuckoo.h>  /* for my hash tbl */
 
 #define LOG(fmt, ...) fprintf(stderr, fmt "\n", ## __VA_ARGS__)
 
 #define NUM_BITS (sizeof(uint32_t) * 8)
+
+/* for hash distribution test */
+#define NUM_BINS 8
+#define BIN_SIZE(i) ((size_t) (1 << (4 + 2 * (i))))
 
 extern char *strndup(const char *, size_t);
 
@@ -25,13 +30,23 @@ typedef enum {
 
 typedef uint32_t (*HashFn)(char *, size_t);
 
+typedef struct { 
+  /* mean and std dev. of the dist of this hash bin size */
+  double ave, dev;
+
+  /* min/max of the dist of this hash bin size */
+  size_t min, max;
+} DistStats;
+
 #define ZEROS {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
-#define HASH(a) { #a, ck_hash_##a, ZEROS, 0.0 }
+#define HASH(a) { #a, ck_hash_##a, ZEROS, 0.0, NULL }
 static struct {
   char   *name;
   HashFn  fn;
   int     bias[NUM_BITS];
   double  time;
+
+  DistStats *stats;
 } hashes[] = {
   HASH(superfast),
   HASH(fnv),
@@ -48,7 +63,7 @@ static struct {
   HASH(ly),
   HASH(rot13),
 
-  { NULL, NULL, ZEROS, 0.0 }
+  { NULL, NULL, ZEROS, 0.0, NULL }
 };
 #undef HASH
 #undef ZEROS
@@ -65,7 +80,7 @@ resize_words(Word **words, size_t new_size) {
 }
 
 static void
-test_bias(Word *words, size_t num_words, HashFn fn, int *bias) {
+test_bias(HashFn fn, Word *words, size_t num_words, int *bias) {
   size_t i, j;
   uint32_t hash;
 
@@ -77,13 +92,126 @@ test_bias(Word *words, size_t num_words, HashFn fn, int *bias) {
   }
 }
 
+static void
+test_dist(HashFn fn, DistStats *stats, Word *words, size_t num_words, size_t **bins) {
+  size_t i, j;
+  uint32_t hash;
+
+  /* clear bins */
+  for (i = 0; i < NUM_BINS; i++) 
+    memset(bins[i], 0, sizeof(size_t) * BIN_SIZE(i));
+
+  /* clear dist stats */
+  memset(stats, 0, sizeof(DistStats) * NUM_BINS);
+
+  /* hash words across all bins */
+  for (i = 0; i < num_words; i++) {
+    hash = (*fn)(words[i].ptr, words[i].len);
+
+    for (j = 0; j < NUM_BINS; j++)
+      bins[j][hash % BIN_SIZE(j)]++;
+  }
+
+  /* calculate the average, min, and max bin size */
+  for (i = 0; i < NUM_BINS; i++) {
+    /* reset the min and max for this bin */
+    stats[i].max = 0;
+    stats[i].min = BIN_SIZE(i + 1);
+
+    /* calculate the average, min, and max */
+    for (j = 0; j < BIN_SIZE(i); j++) {
+      if (bins[i][j] > stats[i].max)
+        stats[i].max = bins[i][j];
+      if (bins[i][j] < stats[i].min)
+        stats[i].min = bins[i][j];
+
+      stats[i].ave += bins[i][j];
+    }
+    stats[i].ave /= BIN_SIZE(i);
+
+    /* calculate the standard deviation */
+    for (j = 0; j < BIN_SIZE(i); j++)
+      stats[i].dev += pow(stats[i].ave - bins[i][j], 2);
+    stats[i].dev = sqrt(stats[i].dev / BIN_SIZE(i));
+  }
+}
+
+static void
+dump_results(size_t num_words) {
+  size_t i, j;
+  double bias, bias_min, bias_max, bias_ave, bias_dev,
+         dist_min, dist_max, dist_dev;
+
+  for (i = 0; hashes[i].name; i++) {
+    bias_ave = bias_dev = dist_dev = 0.0;
+    bias_min = dist_min = num_words;
+    bias_max = dist_max = 0 - num_words;
+
+    /* calculate min/max/ave bit bias */
+    for (j = 0; j < NUM_BITS; j++) {
+      bias = hashes[i].bias[j];
+
+      if (bias < bias_min)
+        bias_min = bias;
+      if (bias > bias_max)
+        bias_max = bias;
+
+      bias_ave += bias;
+    }
+    bias_ave /= NUM_BITS;
+
+    /* calculate bit bias std deviation */
+    for (j = 0; j < NUM_BITS; j++) {
+      bias = hashes[i].bias[j] / num_words;
+      bias_dev += pow(bias_ave - bias, 2);
+    }
+    bias_dev = sqrt(bias_dev / NUM_BITS);
+
+    for (j = 0; j < NUM_BINS; j++) {
+      if (hashes[i].stats[j].min * 1.0 / BIN_SIZE(j) < dist_min)
+        dist_min = hashes[i].stats[j].min * 1.0 / BIN_SIZE(j);
+      if (hashes[i].stats[j].max * 1.0 / BIN_SIZE(j) > dist_max)
+        dist_max = hashes[i].stats[j].max * 1.0 / BIN_SIZE(j);
+      dist_dev += hashes[i].stats[j].dev / BIN_SIZE(j);
+    }
+    dist_dev /= NUM_BINS * num_words;
+
+    /* XXX: is this correct? */
+    dist_min /= num_words;
+    dist_max /= num_words;
+
+    printf(
+      /* name,time,time_per_word, */
+      "%s,%4.3f,%2.5f,"
+
+      /* bias_ave,bias_dev,bias_min,bias_max, */
+      "%2.5f,%2.5f,%2.5f,%2.5f,"
+    
+      /* dist_mean_dev,dist_min_pct,dist_max_pct */
+      "%2.5f,%2.5f,%2.5f\n",
+
+      /* name,time,time_per_word, */
+      hashes[i].name, hashes[i].time, 
+      hashes[i].time / num_words * 1000000,
+
+      /* bias_ave,bias_dev,bias_min,bias_max, */
+      bias_ave, bias_dev, bias_min, bias_max,
+
+      /* dist_mean_dev_pct,dist_min_pct,dist_max_pct */
+      dist_dev * 100.0, dist_min * 100.0, dist_max * 100.0
+
+      /* XXX add per-bin dists? */
+    );
+  }
+}
+
 int main(int argc, char *argv[]) {
   Word *words;
   State state = 0;
   FILE *fh;
   struct timeval load_tv[2], bias_tv[2];
   char  buf[4096], word_buf[1024];
-  size_t  i, j, o, len, word_len, num_words, max_words;
+  size_t  i, o, len, word_len, num_words, max_words, **bins;
   double load_time;
 
   /*************************/
@@ -105,6 +233,28 @@ int main(int argc, char *argv[]) {
   max_words = 1024;
   words = NULL; 
   resize_words(&words, max_words);
+
+  /* allocate test bins */
+  if ((bins = malloc(sizeof(size_t*) * NUM_BINS)) == NULL) {
+    LOG("couldn't allocate test bins");
+    exit(EXIT_FAILURE);
+  }
+
+  for (i = 0; i < NUM_BINS; i++) {
+    bins[i] = malloc(BIN_SIZE(i) * sizeof(size_t));
+    if (bins[i] == NULL) {
+      LOG("couldn't allocate test bin of %d elements", BIN_SIZE(i));
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  /* allocate distribution stats for this hash */
+  for (i = 0; hashes[i].name; i++) {
+    if ((hashes[i].stats = malloc(sizeof(DistStats) * NUM_BINS)) == NULL) {
+      LOG("couldn't allocate stats for hash %s", hashes[i].name);
+      exit(EXIT_FAILURE);
+    }
+  }
 
   /*************************/
   /* READ WORDS FROM STDIN */
@@ -166,13 +316,14 @@ int main(int argc, char *argv[]) {
   LOG("read %d words", num_words);
 
   for (i = 0; hashes[i].name; i++) {
-    LOG("testing %s", hashes[i].name);
+    LOG("testing %s (benchmark)", hashes[i].name);
 
     /* get start time */
     if (gettimeofday(bias_tv + 0, NULL) == -1)
       perror("gettimeofday() failed: ");
 
-    test_bias(words, num_words, hashes[i].fn, hashes[i].bias);
+    /* test hash bit bias */
+    test_bias(hashes[i].fn, words, num_words, hashes[i].bias);
 
     /* get end time */
     if (gettimeofday(bias_tv + 1, NULL) == -1)
@@ -181,6 +332,10 @@ int main(int argc, char *argv[]) {
     /* save time stats */
     hashes[i].time = bias_tv[1].tv_sec - bias_tv[0].tv_sec + 
                      (bias_tv[1].tv_usec - bias_tv[0].tv_usec) / 1000000.0;
+
+    /* test distribution */
+    LOG("testing %s (distribution)", hashes[i].name);
+    test_dist(hashes[i].fn, hashes[i].stats, words, num_words, bins);
   }
 
 
@@ -199,27 +354,15 @@ int main(int argc, char *argv[]) {
     load_time, load_time / num_words * 1000000 
   );
 
-  /* print out timing results */
-  for (i = 0; hashes[i].name; i++) {
-    LOG(
-      "%-16s:    %4.3fsec (%2.5fusec/word)", 
-
-      hashes[i].name, hashes[i].time, 
-      hashes[i].time / num_words * 1000000 
-    );
-  }
-
-  LOG("\nBias Results:");
-  for (i = 0; hashes[i].name; i++) {
-    fprintf(stderr, "%s", hashes[i].name);
-
-    for (j = 0; j < NUM_BITS; j++)
-      fprintf(stderr, ",%4.2f", hashes[i].bias[j] * 100.0 / num_words);
-
-    fprintf(stderr, "\n");
-  }
-
+  printf(
+    "name,time,time_per_word,"
+    "bias_ave,bias_dev,bias_min,bias_max,"
+    "dist_mean_dev_pct,dist_min_pct,dist_min,dist_max_pct"
+    "\n"
+  );
+  dump_results(num_words);
 
   /* return success */
   return EXIT_SUCCESS;
 }
+

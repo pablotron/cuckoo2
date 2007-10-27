@@ -1,5 +1,11 @@
 #include "ck_private.h"
 
+#ifdef CK_FAST_HASH
+#define OFFSET(key, capa) ((key) & ((capa) - 1))
+#else
+#define OFFSET(key, capa) ((key) % (capa))
+#endif /* CK_FAST_HASH */
+
 static ck_err 
 ck_init_with_size(ck_hash *hash, ck_cfg *cfg, size_t size) {
   uint32_t mod;
@@ -97,7 +103,7 @@ ck_key(ck_hash *hash, void *key, uint32_t key_len, uint32_t *ret) {
   for (i = 0; i < 2; i++) {                                               \
     te[i] = (h)->bins +                                                   \
             (h)->capa[0] * i +                                            \
-            ((pre_keys)[i] % (h)->capa[i]);                               \
+            OFFSET((pre_keys)[i], (h)->capa[i]);                          \
                                                                           \
     if (te[i]->key && te[i]->key_len == (kl) &&                           \
         te[i]->keys[i] == (pre_keys)[i] &&                                \
@@ -153,7 +159,7 @@ do_resize(ck_hash *hash) {
       continue;
 
     /* calculate offset for entry in first bin */
-    ofs = hash->bins[i].keys[0] % new_capa[0];
+    ofs = OFFSET(hash->bins[i].keys[0], new_capa[0]);
 
     if (!new_bins[ofs].key) {
       /* save entry */
@@ -183,7 +189,7 @@ do_resize(ck_hash *hash) {
     }
 
     /* calculate offset for entry in second bin */
-    ofs = new_capa[0] + (hash->bins[i].keys[1] % new_capa[1]);
+    ofs = new_capa[0] + OFFSET(hash->bins[i].keys[1], new_capa[1]);
 
     if (!new_bins[ofs].key) {
       /* save entry */
@@ -267,7 +273,12 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       return err;
     keys = k;
 
-    DEBUG("%s => [%d, %d]", (char*) key, keys[0] % hash->capa[0], keys[1] % hash->capa[1]);
+    DEBUG(
+      "%s => [%d, %d]", 
+      (char*) key, 
+      OFFSET(keys[0], hash->capa[0]),
+      OFFSET(keys[1], hash->capa[1])
+    );
   }
 
   /* populate new entry */
@@ -288,7 +299,7 @@ ck_set(ck_hash *hash, void *key, uint32_t key_len, uint32_t *keys, void *val) {
       /* check each bin */
       for (i = 0; i < 2; i++) {
         /* get matching entry from bin */
-        e = hash->bins + (i ? hash->capa[0] : 0) + (ne.keys[i] % hash->capa[i]);
+        e = hash->bins + (i ? hash->capa[0] : 0) + OFFSET(ne.keys[i], hash->capa[i]);
         DEBUG("e = %p, bins = %p", (void*) e, (void*) hash->bins);
 
         /* save old entry and write new entry */

@@ -7,5 +7,6 @@
 #define DEBUG(...) ((void) 0)
 #endif /* CK_DEBUG */
 
+#define CK_FAST_HASH
 #undef CK_SAFETY_CHECKS
 #undef CK_TRACK_STATS

@@ -43,7 +43,7 @@ test_glibc_hash(Word *words, size_t num_words, struct timeval *tv) {
   ENTRY e;
 
   if (hcreate(num_words) == 0) {
-    fprintf(stderr, "hcreate() failed\n");
+    LOG("hcreate() failed");
     exit(EXIT_FAILURE);
   }
     
@@ -62,7 +62,7 @@ test_glibc_hash(Word *words, size_t num_words, struct timeval *tv) {
     e.key = words[i].ptr;
     e.data = words[i].ptr;
     if (hsearch(e, ENTER) == NULL) {
-      fprintf(stderr, "hsearch() insert failed\n");
+      LOG("hsearch() insert failed");
       exit(EXIT_FAILURE);
     }
   }
@@ -72,7 +72,7 @@ test_glibc_hash(Word *words, size_t num_words, struct timeval *tv) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished adding words to glibc hash\n");
+  LOG("finished adding words to glibc hash");
 
   /*******************************/
   /* LOOK UP WORDS IN GLIBC HASH */
@@ -87,7 +87,7 @@ test_glibc_hash(Word *words, size_t num_words, struct timeval *tv) {
   for (i = 0; i < num_words; i++) {
     e.key = words[i].ptr;
     if (!hsearch(e, FIND)) {
-      fprintf(stderr, "hsearch() lookup failed\n");
+      LOG("hsearch() lookup failed");
       exit(EXIT_FAILURE);
     }
   }
@@ -97,7 +97,7 @@ test_glibc_hash(Word *words, size_t num_words, struct timeval *tv) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished reading words from glibc hash\n");
+  LOG("finished reading words from glibc hash");
 
   /* clean up glibc hash */
   hdestroy();
@@ -129,7 +129,7 @@ test_glib_hash(Word *words, size_t num_words, struct timeval *tv) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished adding words to glib hash\n");
+  LOG("finished adding words to glib hash");
 
   /******************************/
   /* LOOK UP WORDS IN GLIB HASH */
@@ -149,7 +149,7 @@ test_glib_hash(Word *words, size_t num_words, struct timeval *tv) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished reading words from glib hash\n");
+  LOG("finished reading words from glib hash");
 
   /* clean up glib hash */
 
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
 
   /* check for required argument */
   if (argc < 2) {
-    fprintf(stderr, "Usage: %s <file>\n", argv[0]);
+    LOG("Usage: %s <file>", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -231,12 +231,12 @@ int main(int argc, char *argv[]) {
             err = ck_key(&hash, word_buf, word_len, words[num_words].keys);
             if (err  != CK_OK) {
               ck_strerror(err, buf, sizeof(buf));
-              fprintf(stderr, "couldn't hash word \"%s\": %s\n", word_buf, buf);
+              LOG("couldn't hash word \"%s\": %s", word_buf, buf);
               exit(EXIT_FAILURE);
             }
 
             /* dump word */
-            /* fprintf(stderr, "got \"%s\"\n", word_buf); */
+            /* LOG("got \"%s\"", word_buf); */
 
             /* increment word counter */
             num_words++;
@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
         }
         break;
       default:
-        fprintf(stderr, "unknown state: %d\n", state);
+        LOG("unknown state: %d", state);
         exit(-1);
       }
     }
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
  *   for (i = 0; i < 10; i++)
  *     LOG("%02d. %s (%d)", i, words[i].ptr, words[i].len);
  * 
- *   LOG("last 10 words:\n");
+ *   LOG("last 10 words:");
  *   for (i = num_words - 10; i < num_words; i++)
  *     LOG("%06d. %s (%d)", i, words[i].ptr, words[i].len);
  */ 
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
     /* check for error */
     if (err != CK_OK) {
       ck_strerror(err, buf, sizeof(buf));
-      fprintf(stderr, "couldn't insert word \"%s\": %s", words[i].ptr, buf);
+      LOG("couldn't insert word \"%s\": %s", words[i].ptr, buf);
       exit(EXIT_FAILURE);
     }
   }
@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
   for (i = 0; i < num_words; i++) {
     if ((err = ck_get(&hash, words[i].ptr, words[i].len, NULL, (void*) &val)) != CK_OK) {
       ck_strerror(err, buf, sizeof(buf));
-      fprintf(stderr, "couldn't get word \"%s\": %s", words[i].ptr, buf);
+      LOG("couldn't get word \"%s\": %s", words[i].ptr, buf);
       exit(EXIT_FAILURE);
     }
   }
@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished reading words from hash\n");
+  LOG("finished reading words from cuckoo hash");
 
   /* clean up hash */
   ck_fini(&hash);
@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
     /* check for error */
     if (err != CK_OK) {
       ck_strerror(err, buf, sizeof(buf));
-      fprintf(stderr, "couldn't insert word \"%s\": %s", words[i].ptr, buf);
+      LOG("couldn't insert word \"%s\": %s", words[i].ptr, buf);
       exit(EXIT_FAILURE);
     }
   }
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
     perror("gettimeofday() failed: ");
   to++;
 
-  LOG("finished adding words to second hash");
+  LOG("finished adding words to cuckoo/pre hash");
 
   /*******************************/
   /* READ WORDS FROM SECOND HASH */
@@ -377,7 +377,7 @@ int main(int argc, char *argv[]) {
   for (i = 0; i < num_words; i++) {
     if ((err = ck_get(&hash, words[i].ptr, words[i].len, words[i].keys, (void*) &val)) != CK_OK) {
       ck_strerror(err, buf, sizeof(buf));
-      fprintf(stderr, "couldn't get word \"%s\": %s", words[i].ptr, buf);
+      LOG("couldn't get word \"%s\": %s", words[i].ptr, buf);
       exit(EXIT_FAILURE);
     }
   }
@@ -387,7 +387,7 @@ int main(int argc, char *argv[]) {
     perror("gettimeofday() failed: ");
   to++;
 
-  printf("finished reading words from second hash\n");
+  LOG("finished reading words from cuckoo/pre hash");
 
   test_glib_hash(words, num_words, tv + to);
   to += 4;
@@ -403,17 +403,18 @@ int main(int argc, char *argv[]) {
     results[i] = tv[2 * i + 1].tv_sec - tv[2 * i].tv_sec + 
                  (tv[2 * i + 1].tv_usec - tv[2 * i].tv_usec) / 1000000.0;
 
-  fprintf(stderr, 
-    "Results (%d words):\n"
-    "load (from disk):    %4.3fsec (%2.5fusec/word)\n"
-    "insert (hashed):     %4.3fsec (%2.5fusec/word)\n"
-    "lookup (hashed):     %4.3fsec (%2.5fusec/word)\n"
-    "insert (pre-hashed): %4.3fsec (%2.5fusec/word)\n"
-    "lookup (pre-hashed): %4.3fsec (%2.5fusec/word)\n"
-    "insert (glib):       %4.3fsec (%2.5fusec/word)\n"
-    "lookup (glib):       %4.3fsec (%2.5fusec/word)\n"
-    "insert (glibc):      %4.3fsec (%2.5fusec/word)\n"
-    "lookup (glibc):      %4.3fsec (%2.5fusec/word)\n"
+  printf(
+    "Benchmark Results (%d words)\n"
+    "source,type,time (sec), time (usec/word)\n"
+    "disk,load,%4.3f,%2.5f\n"
+    "cuckoo,insert,%4.3f,%2.5f\n"
+    "cuckoo,lookup,%4.3f,%2.5f\n"
+    "cuckoo/pre,insert,%4.3f,%2.5f\n"
+    "cuckoo/pre,lookup,%4.3f,%2.5f\n"
+    "glib,insert,%4.3f,%2.5f\n"
+    "glib,lookup,%4.3f,%2.5f\n"
+    "glibc,insert,%4.3f,%2.5f\n"
+    "glibc,lookup,%4.3f,%2.5f\n"
     "\n",
 
     num_words,
